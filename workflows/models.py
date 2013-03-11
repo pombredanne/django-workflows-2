@@ -135,6 +135,7 @@ class Workflow(models.Model):
                 wor.save()
                 workflows.utils.set_state(self.initial_state)
 
+
 class State(models.Model):
     """A certain state within workflow.
 
@@ -158,7 +159,8 @@ class State(models.Model):
         ordering = ("name", )
 
     def __unicode__(self):
-        return "%s (%s)" % (self.name, self.workflow.name)
+        #return "%s (%s)" % (self.name, self.workflow.name)
+        return self.name
 
     def get_allowed_transitions(self, obj, user):
         """Returns all allowed transitions for passed object and user.
@@ -167,7 +169,7 @@ class State(models.Model):
         for transition in self.transitions.all():
             permission = transition.permission
             if permission is None:
-               transitions.append(transition)
+                transitions.append(transition)
             else:
                 # First we try to get the objects specific has_permission
                 # method (in case the object inherits from the PermissionBase
@@ -179,6 +181,7 @@ class State(models.Model):
                     if permissions.utils.has_permission(obj, user, permission.codename):
                         transitions.append(transition)
         return transitions
+
 
 class Transition(models.Model):
     """A transition from a source to a destination state. The transition can
