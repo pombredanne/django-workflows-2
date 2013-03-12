@@ -216,7 +216,10 @@ class Transition(models.Model):
     permission = models.ForeignKey(Permission, verbose_name=_(u"Permission"), blank=True, null=True)
 
     def __unicode__(self):
+        if self.name == '-':
+            return u'--> %s' % self.destination.__unicode__()
         return self.name
+
 
 class StateObjectRelation(models.Model):
     """Stores the workflow state of an object.

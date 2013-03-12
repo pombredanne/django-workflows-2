@@ -11,33 +11,25 @@ from workflows.models import WorkflowModelRelation
 from workflows.models import WorkflowPermissionRelation
 
 
+def retrieve_object_id_from_path(request):
+    #TODO: is there a better way ?
+    # ex: u'/admin/paintdb/recipe/203421/'
+    path_info = request.META['PATH_INFO']
+    object_id = int(path_info.strip('/').split('/')[-1])
+    return object_id
+
+
 def retrieve_parent_workflow(request):
     #TODO: is there a better way ?
     # retrieve object_id from path_info
     try:
-        # ex: u'/admin/paintdb/recipe/203421/'
-        path_info = request.META['PATH_INFO']
-        object_id = int(path_info.strip('/').split('/')[-1])
-        workflow = Workflow.objects.get(pk=object_id)
+        workflow = Workflow.objects.get(pk=retrieve_object_id_from_path(request))
     except:
         workflow = None
     return workflow
 
 
-class StateAdminMixin(object):
-
-    def formfield_for_manytomany(self, db_field, request, **kwargs):
-        if db_field.name == 'transitions':
-            workflow = retrieve_parent_workflow(request)
-            if workflow:
-                queryset = workflow.transitions
-            else:
-                queryset = Transition.objects.none()
-            kwargs["queryset"] = queryset
-        return super(StateAdminMixin, self).formfield_for_manytomany(db_field, request, **kwargs)
-
-
-class StateAdmin(StateAdminMixin, admin.ModelAdmin):
+class StateAdmin(admin.ModelAdmin):
     list_display = ['__unicode__', 'transition_listing', 'workflow', ]
     list_filter = ['workflow', ]
     filter_horizontal = ['transitions', ]
@@ -51,11 +43,31 @@ class StateAdmin(StateAdminMixin, admin.ModelAdmin):
     transition_listing.short_description = _(u'transitions')
     transition_listing.allow_tags = True
 
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        if db_field.name == 'transitions':
+            try:
+                state = State.objects.get(id=retrieve_object_id_from_path(request))
+                queryset = state.workflow.transitions
+            except:
+                queryset = Transition.objects.all()
+            kwargs["queryset"] = queryset
+        return super(StateAdmin, self).formfield_for_manytomany(db_field, request, **kwargs)
 
-class StateInline(StateAdminMixin, admin.TabularInline):
+
+class StateInline(admin.TabularInline):
     model = State
     filter_horizontal = ['transitions', ]
     extra = 0
+
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        if db_field.name == 'transitions':
+            try:
+                workflow = Workflow.objects.get(id=retrieve_object_id_from_path(request))
+                queryset = workflow.transitions
+            except:
+                queryset = Transition.objects.all()
+            kwargs["queryset"] = queryset
+        return super(StateInline, self).formfield_for_manytomany(db_field, request, **kwargs)
 
 
 class WorkflowAdmin(admin.ModelAdmin):
@@ -93,20 +105,7 @@ class WorkflowAdmin(admin.ModelAdmin):
         return super(WorkflowAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
 
 
-class TransitionAdminMixin(object):
-
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == 'destination':
-            workflow = retrieve_parent_workflow(request)
-            if workflow:
-                queryset = workflow.states
-            else:
-                queryset = Transition.objects.none()
-            kwargs["queryset"] = queryset
-        return super(TransitionAdminMixin, self).formfield_for_foreignkey(db_field, request, **kwargs)
-
-
-class TransitionAdmin(TransitionAdminMixin, admin.ModelAdmin):
+class TransitionAdmin(admin.ModelAdmin):
     list_display = ['__unicode__', 'destination', 'permission_listing', 'workflow', ]
     list_filter = ['workflow', ]
 
@@ -118,6 +117,16 @@ class TransitionAdmin(TransitionAdminMixin, admin.ModelAdmin):
         return html
     permission_listing.short_description = _(u'permissions')
     permission_listing.allow_tags = True
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == 'destination':
+            try:
+                transition = Transition.objects.get(id=retrieve_object_id_from_path(request))
+                queryset = transition.workflow.states
+            except:
+                queryset = State.objects.all()
+            kwargs["queryset"] = queryset
+        return super(TransitionAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
 
 admin.site.register(Workflow, WorkflowAdmin)
 admin.site.register(State, StateAdmin)
