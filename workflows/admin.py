@@ -4,6 +4,7 @@ from workflows.models import State
 from workflows.models import StateInheritanceBlock
 from workflows.models import StatePermissionRelation
 from workflows.models import StateObjectRelation
+from workflows.models import TransitionObjectRelation
 from workflows.models import Transition
 from workflows.models import Workflow
 from workflows.models import WorkflowObjectRelation
@@ -17,16 +18,6 @@ def retrieve_object_id_from_path(request):
     path_info = request.META['PATH_INFO']
     object_id = int(path_info.strip('/').split('/')[-1])
     return object_id
-
-
-def retrieve_parent_workflow(request):
-    #TODO: is there a better way ?
-    # retrieve object_id from path_info
-    try:
-        workflow = Workflow.objects.get(pk=retrieve_object_id_from_path(request))
-    except:
-        workflow = None
-    return workflow
 
 
 class StateAdmin(admin.ModelAdmin):
@@ -96,11 +87,11 @@ class WorkflowAdmin(admin.ModelAdmin):
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "initial_state":
-            workflow = retrieve_parent_workflow(request)
-            if workflow:
+            try:
+                workflow = Workflow.objects.get(id=retrieve_object_id_from_path(request))
                 queryset = workflow.states.all()
-            else:
-                queryset = State.objects.none()
+            except:
+                queryset = State.objects.all()
             kwargs["queryset"] = queryset
         return super(WorkflowAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
 
@@ -128,6 +119,13 @@ class TransitionAdmin(admin.ModelAdmin):
             kwargs["queryset"] = queryset
         return super(TransitionAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
 
+
+class TransitionObjectRelationAdmin(admin.ModelAdmin):
+    list_display = ['datetime', 'content', 'state', 'user', ]
+    date_hierarchy = 'datetime'
+    search_fields = ['user__username', ]
+
+
 admin.site.register(Workflow, WorkflowAdmin)
 admin.site.register(State, StateAdmin)
 admin.site.register(StateInheritanceBlock)
@@ -137,3 +135,4 @@ admin.site.register(Transition, TransitionAdmin)
 admin.site.register(WorkflowObjectRelation)
 admin.site.register(WorkflowModelRelation)
 admin.site.register(WorkflowPermissionRelation)
+admin.site.register(TransitionObjectRelation, TransitionObjectRelationAdmin)

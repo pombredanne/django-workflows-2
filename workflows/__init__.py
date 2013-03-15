@@ -40,15 +40,15 @@ class WorkflowBase(object):
         """
         return workflows.utils.get_state(self)
 
-    def set_state(self, state):
+    def set_state(self, state, user=None):
         """Sets the workflow state of the object.
         """
-        return workflows.utils.set_state(self, state)
+        return workflows.utils.set_state(self, state, user)
 
-    def set_initial_state(self):
+    def set_initial_state(self, user=None):
         """Sets the initial state of the current workflow to the object.
         """
-        return self.set_state(self.get_workflow().initial_state)
+        return self.set_state(self.get_workflow().initial_state, user)
 
     def get_allowed_transitions(self, user):
         """Returns allowed transitions for the current state.
@@ -59,3 +59,8 @@ class WorkflowBase(object):
         """Processes the passed transition (if allowed).
         """
         return workflows.utils.do_transition(self, transition, user)
+
+    def get_state_history(self):
+        """Returns the state history of the object.
+        """
+        return workflows.utils.get_state_history(self)
