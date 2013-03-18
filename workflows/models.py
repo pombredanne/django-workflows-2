@@ -218,7 +218,7 @@ class Transition(models.Model):
 
     def __unicode__(self):
         if self.name == '-':
-            return u'--> %s' % self.destination.__unicode__()
+            return u'> %s' % self.destination.__unicode__()
         return self.name
 
 
